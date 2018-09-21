@@ -1,0 +1,20 @@
+# folders
+.metadata/
+.recommenders/
+RemoteSystemsTempFiles
+*/.settings/
+*/bin/
+
+
+# files
+.classpath
+.project
+
+
+# types
+*.asta
+*.docx
+*.bak*
+*.xlsx
+*.vpp
+doc.vpp.*
