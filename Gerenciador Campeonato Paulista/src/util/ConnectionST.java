@@ -4,26 +4,36 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class ConnectionS {
+public class ConnectionST {
 
 	private static Connection c;
 
-	private ConnectionS () {
+	private ConnectionST () {
 	}
 	
 	public static Connection getConnection() 
-			throws ClassNotFoundException, SQLException {
-
+			throws GenericDAOException {
+		if(c == null) {
+			instantiate ();
+		}
+		return c;
+	}
+	
+	private static void instantiate () 
+			throws GenericDAOException {
 		String hostName = "localhost";
-		String dbName = "aulacall";
+		String dbName = "av1";
 		String user = "eclipse";
 		String senha = "";
-		Class.forName("net.sourceforge.jtds.jdbc.Driver");
-		c = DriverManager.getConnection(
-				String.format(
-				"jdbc:jtds:sqlserver://%s:1433;databaseName=%s;user=%s;password=%s;", hostName, dbName, user, senha)
-		);
-		return c;
+		try {
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
+			c = DriverManager.getConnection(
+					String.format(
+					"jdbc:jtds:sqlserver://%s:1433;databaseName=%s;user=%s;password=%s;", hostName, dbName, user, senha)
+			);
+		} catch (ClassNotFoundException | SQLException e) {
+			throw new GenericDAOException(e);
+		}
 	}
 }
 

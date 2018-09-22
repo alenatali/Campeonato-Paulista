@@ -19,7 +19,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
-import util.ConnectionS;
+import util.ConnectionST;
 
 public class Telasssaaa {
 	

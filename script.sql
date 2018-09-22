@@ -28,21 +28,19 @@ FOREIGN KEY (time_b_codigo) REFERENCES time_(codigo)
 )
 
 CREATE VIEW grupo_a AS
-SELECT codigo, 'A' AS grupo, nome FROM time_
+SELECT ordem,  nome AS 'time', 'A' AS grupo FROM time_
 WHERE grupo = 1
 
-
-
 CREATE VIEW grupo_b AS
-SELECT codigo, 'B' AS grupo, nome FROM time_
+SELECT ordem,  nome AS 'time', 'B' AS grupo FROM time_
 WHERE grupo = 2
 
 CREATE VIEW grupo_c AS
-SELECT codigo, 'C' AS grupo, nome FROM time_
+SELECT ordem,  nome AS 'time', 'C' AS grupo FROM time_
 WHERE grupo = 3
 
 CREATE VIEW grupo_d AS
-SELECT codigo, 'D' AS grupo, nome FROM time_
+SELECT ordem,  nome AS 'time', 'D' AS grupo FROM time_
 WHERE grupo = 4
 
 CREATE VIEW grupos AS

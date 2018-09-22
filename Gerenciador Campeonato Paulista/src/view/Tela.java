@@ -1,27 +1,27 @@
 package view;
 
-import java.awt.BorderLayout;
 import java.awt.EventQueue;
-
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.border.EmptyBorder;
-import javax.swing.JButton;
 import javax.swing.JComponent;
-
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.awt.event.ActionEvent;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-import javax.swing.BoxLayout;
+import javax.swing.JOptionPane;
 import javax.swing.JTable;
-import java.awt.FlowLayout;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
 import controller.TelaCtrl;
+import util.ErrorLogST;
+import util.GenericDAOException;
 
 import javax.swing.JLabel;
 
@@ -34,28 +34,20 @@ public class Tela extends JFrame implements ActionListener {
 	private JTable tGD;
 	private TelaCtrl controller;
 
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					Tela frame = new Tela();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
 	public Tela() {
-		controller = new TelaCtrl();
+		try {
+			controller = new TelaCtrl();
+		} catch (GenericDAOException e) {
+			errorAlert(e);
+		}
+		
+		lookAndFeelSetup ();
 		
 		setResizable(false);
 		setTitle("Campeonato Paulista");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setSize(600, 400);
 		setLocationRelativeTo(null);
-		//setBounds(100, 100, 485, 328);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -126,21 +118,67 @@ public class Tela extends JFrame implements ActionListener {
 		panel_1.add(lblGrupoD);
 	}
 	
-	private void limparTabelas () {
-		TableModel tm = new DefaultTableModel(new String[] {"Time"}, 5);
-
-		tGA.setModel(tm);
-		tGB.setModel(tm);
-		tGC.setModel(tm);
-		tGD.setModel(tm);
+	private void lookAndFeelSetup () {
+		try {
+			for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+				if ("Windows".equals(info.getName())) {
+					UIManager.setLookAndFeel(info.getClassName());
+					break;
+				}
+			}
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+				| UnsupportedLookAndFeelException e) {
+			e.printStackTrace();
+		}
 	}
 	
+	private void limparTabelas () {
+		JTable[] jts = new JTable[] {tGA, tGB, tGC, tGD};
+		TableModel tm = new DefaultTableModel(new String[] {"Time"}, 5);
+		for(JTable jt : jts) {
+			jt.setModel(tm);
+			jt.repaint();
+		} 
+	}
+	
+	private void errorAlert (Exception e) {
+		String mensage = "Ops, ocorreu um erro :(( \nPara mais detalhes consulte o log \ndeste software pasta temp.";
+		JOptionPane.showMessageDialog(this, mensage, "Erro", JOptionPane.ERROR_MESSAGE);
+		try {
+			ErrorLogST.getErrorLog().addError(e);
+		} catch (IOException e1) {
+			String ioError = "Erro do tipo entrada e saida";
+			JOptionPane.showMessageDialog(this, ioError, "Erro", JOptionPane.ERROR_MESSAGE);
+		}
+		System.exit(1);
+	}
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		JComponent c = (JComponent) e.getSource();
 		if(c.getName().equals("group generator")) {
-			controller.prencherTabGrupos(new JTable[] {tGA, tGB, tGC, tGD});
+			JTable[] jts = new JTable[] {tGA, tGB, tGC, tGD};
+			try {
+				controller.prencherTabGrupos(jts);
+			} catch (GenericDAOException e1) {
+				errorAlert(e1);
+			}
+			for(JTable jt : jts) {
+				jt.repaint();
+			}
 		}
+	}
+	
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					Tela frame = new Tela();
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
 	}
 }
