@@ -24,14 +24,12 @@ import util.ErrorLogST;
 import util.GenericDAOException;
 
 import javax.swing.JLabel;
+import javax.swing.JTabbedPane;
 
 public class Tela extends JFrame implements ActionListener {
 
 	private JPanel contentPane;
-	private JTable tGA;
-	private JTable tGB;
-	private JTable tGC;
-	private JTable tGD;
+	private JTable[] tg = new JTable[4];
 	private TelaCtrl controller;
 
 	public Tela() {
@@ -40,9 +38,7 @@ public class Tela extends JFrame implements ActionListener {
 		} catch (GenericDAOException e) {
 			errorAlert(e);
 		}
-		
 		lookAndFeelSetup ();
-		
 		setResizable(false);
 		setTitle("Campeonato Paulista");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -65,41 +61,11 @@ public class Tela extends JFrame implements ActionListener {
 		mntmGerarGrupos.addActionListener(this);
 		mnOpes.add(mntmGerarGrupos);
 		
-		JPanel panel = new JPanel();
-		panel.setBounds(0, 21, 594, 350);
-		contentPane.add(panel);
-		panel.setLayout(null);
+		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane.setBounds(0, 21, 598, 350);
+		contentPane.add(tabbedPane);
 		
 		JPanel panel_1 = new JPanel();
-		panel_1.setBounds(10, 11, 574, 328);
-		panel.add(panel_1);
-		
-		tGA = new JTable();
-		tGB = new JTable();
-		tGC = new JTable();
-		tGD = new JTable();
-		limparTabelas();
-		
-		tGA.setBounds(68, 147, 75, 80);
-		tGA.setRowSelectionAllowed(false);
-		tGA.getColumnModel().getColumn(0).setResizable(false);
-		panel_1.setLayout(null);
-		panel_1.add(tGA);
-		
-		tGB.setRowSelectionAllowed(false);
-		tGB.setBounds(185, 147, 75, 80);
-		tGB.getColumnModel().getColumn(0).setResizable(false);
-		panel_1.add(tGB);
-		
-		tGC.setBounds(301, 147, 75, 80);
-		tGC.setRowSelectionAllowed(false);
-		tGC.getColumnModel().getColumn(0).setResizable(false);
-		panel_1.add(tGC);
-		
-		tGD.setRowSelectionAllowed(false);
-		tGD.setBounds(416, 147, 75, 80);
-		tGD.getColumnModel().getColumn(0).setResizable(false);
-		panel_1.add(tGD);
 		
 		JLabel lblGrupoA = new JLabel("Grupo A");
 		lblGrupoA.setBounds(68, 106, 46, 14);
@@ -116,6 +82,40 @@ public class Tela extends JFrame implements ActionListener {
 		JLabel lblGrupoD = new JLabel("Grupo D");
 		lblGrupoD.setBounds(416, 106, 46, 14);
 		panel_1.add(lblGrupoD);
+		
+
+		
+		for(int x = 0; x < tg.length; x++) {
+			tg[x] = new JTable();
+		}
+		limparTabelas();
+		
+		tabbedPane.addTab("Grupos", null, panel_1, null);
+		panel_1.setLayout(null);
+		panel_1.add(tg[0]);
+		panel_1.add(tg[1]);
+		panel_1.add(tg[2]);
+		panel_1.add(tg[3]);
+		
+		
+		tg[0].setBounds(68, 147, 75, 80);
+		tg[0].setRowSelectionAllowed(false);
+		tg[0].getColumnModel().getColumn(0).setResizable(false);
+		
+		tg[1].setRowSelectionAllowed(false);
+		tg[1].setBounds(185, 147, 75, 80);
+		tg[1].getColumnModel().getColumn(0).setResizable(false);
+		
+		tg[2].setBounds(301, 147, 75, 80);
+		tg[2].setRowSelectionAllowed(false);
+		tg[2].getColumnModel().getColumn(0).setResizable(false);
+		
+		tg[3].setRowSelectionAllowed(false);
+		tg[3].setBounds(416, 147, 75, 80);
+		tg[3].getColumnModel().getColumn(0).setResizable(false);
+		
+		JPanel panel_2 = new JPanel();
+		tabbedPane.addTab("Oitavas", null, panel_2, null);
 	}
 	
 	private void lookAndFeelSetup () {
@@ -133,9 +133,9 @@ public class Tela extends JFrame implements ActionListener {
 	}
 	
 	private void limparTabelas () {
-		JTable[] jts = new JTable[] {tGA, tGB, tGC, tGD};
 		TableModel tm = new DefaultTableModel(new String[] {"Time"}, 5);
-		for(JTable jt : jts) {
+		for(JTable jt : tg) {
+			tm = new DefaultTableModel(new String[] {"Time"}, 5);
 			jt.setModel(tm);
 			jt.repaint();
 		} 
@@ -157,14 +157,10 @@ public class Tela extends JFrame implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		JComponent c = (JComponent) e.getSource();
 		if(c.getName().equals("group generator")) {
-			JTable[] jts = new JTable[] {tGA, tGB, tGC, tGD};
 			try {
-				controller.prencherTabGrupos(jts);
+				controller.prencherTabGrupos(tg);
 			} catch (GenericDAOException e1) {
 				errorAlert(e1);
-			}
-			for(JTable jt : jts) {
-				jt.repaint();
 			}
 		}
 	}

@@ -30,7 +30,6 @@ public class Grupos implements GruposDAO {
 		try {
 			PreparedStatement ps = c.prepareStatement(sql);
 			ResultSet rs = ps.executeQuery();
-			ps.close();
 			lista = new ArrayList<>();
 			while(rs.next()) {
 				LinhaGrupo n = new LinhaGrupo();
@@ -39,6 +38,7 @@ public class Grupos implements GruposDAO {
 				n.setGrupo((char) rs.getCharacterStream("grupo").read());
 				lista.add(n);
 			}
+			ps.close();
 			rs.close();
 		} catch (SQLException | IOException e) {
 			throw new GenericDAOException(e);

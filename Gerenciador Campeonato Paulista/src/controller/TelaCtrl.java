@@ -23,32 +23,42 @@ public class TelaCtrl {
 			throws GenericDAOException {
 		ArrayList<LinhaGrupo> lista = (ArrayList<LinhaGrupo>) persistence.recuperar();
 		//
-		// Instanciação do vetor de List e atribuindo o ti
-		ArrayList[] grupos = new ArrayList[4];
-		for(int x = 0; x < 4; x++) {
-			grupos[x] = new ArrayList<String>();
-		}
-		//
-		// Separação da variavel lista por grupos
-		for(LinhaGrupo x : lista) {
-			switch(x.getGrupo()) {
-				case 'A': grupos[0].add(x.getTime()); break;
-				case 'B': grupos[1].add(x.getTime()); break;
-				case 'C': grupos[2].add(x.getTime()); break;
-				default : grupos[3].add(x.getTime()); break;
+		// agrupando
+		String[][] grupos = new String[4][5];
+		int[] rowCount = {0,0,0,0};
+		for(LinhaGrupo lg : lista) {
+			switch(lg.getGrupo()) {
+			case 'A': 			
+				if(rowCount[0] < 5) {
+					grupos[0][rowCount[0]] = lg.getTime();
+					rowCount[0] += 1;
+				}
+				break;
+			case 'B': 
+				if(rowCount[1] < 5) {
+					grupos[1][rowCount[1]] = lg.getTime();
+					rowCount[1] += 1;	
+				}
+				break;
+			case 'C': 
+				if(rowCount[2] < 5) {
+					grupos[2][rowCount[2]] = lg.getTime();
+					rowCount[2] += 1;	
+				}
+				break;
+			default: 
+				if(rowCount[3] < 5) {
+					grupos[3][rowCount[3]] = lg.getTime();
+					rowCount[3] += 1;	
+				}
+				break;
 			}
 		}
-		//
-		//Atribuição dos grupos as tabelas
 		for(int x = 0; x < 4; x++) {
-			Object[] header = new Object[] {new String("Time")};
-			Object[][] data = new Object[][] {
-				{ grupos[x].toArray() }
-				};
-			// THE PROBLEM IS HERE
-			TableModel tm = new DefaultTableModel(data, header);
-			System.out.println(tm.getValueAt(0, 0).toString());
-			t[x].setModel(tm);
+			t[x].getColumnModel().getColumn(0).setHeaderValue("Time");
+			for(int y = 0; y < 5; y++) {
+				t[x].getModel().setValueAt(grupos[x][y], y, 0);
+			}
 		}
 	}
 	
