@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+//
+// O log é guardado em um arquivo, por tanto só pode ser editado por
+// uma fonte por vez, então um singleton é o mais coerente neste caso.
 public class ErrorLogST {
 	
 	private static ErrorLogST el;

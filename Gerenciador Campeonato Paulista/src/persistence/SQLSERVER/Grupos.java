@@ -1,6 +1,7 @@
 package persistence.SQLSERVER;
 
 import java.io.IOException;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -24,6 +25,7 @@ public class Grupos implements GruposDAO {
 	@Override
 	public List<LinhaGrupo> recuperar() 
 			throws GenericDAOException {
+		gerarGrupos();
 		List<LinhaGrupo> lista = null;
 		
 		String sql = "SELECT * FROM grupos";
@@ -45,6 +47,20 @@ public class Grupos implements GruposDAO {
 		}
 		
 		return lista;
+	}
+
+	@Override
+	public void gerarGrupos()
+			throws GenericDAOException {
+		String sql = "{CALL sp_chaveador}";
+		CallableStatement cs;
+		try {
+			cs = c.prepareCall(sql);
+			cs.execute();
+			cs.close();
+		} catch (SQLException e) {
+			throw new GenericDAOException(e);
+		}
 	}
 
 }

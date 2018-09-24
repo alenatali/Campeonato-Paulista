@@ -6,7 +6,6 @@ import model.LinhaGrupo;
 import util.GenericDAOException;
 
 public interface GruposDAO {
-	
 	public List<LinhaGrupo> recuperar () throws GenericDAOException;
-
+	public void gerarGrupos () throws GenericDAOException;
 }

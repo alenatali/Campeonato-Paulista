@@ -1,5 +1,3 @@
--- SHARE WITH V_I_N_I
-
 CREATE DATABASE av1
 GO
 USE av1
@@ -28,19 +26,19 @@ FOREIGN KEY (time_b_codigo) REFERENCES time_(codigo)
 )
 
 CREATE VIEW grupo_a AS
-SELECT ordem,  nome AS 'time', 'A' AS grupo FROM time_
+SELECT ordem,  nome AS 'time', 'A' AS grupo, codigo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
 WHERE grupo = 1
 
 CREATE VIEW grupo_b AS
-SELECT ordem,  nome AS 'time', 'B' AS grupo FROM time_
+SELECT ordem,  nome AS 'time', 'B' AS grupo, codigo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
 WHERE grupo = 2
 
 CREATE VIEW grupo_c AS
-SELECT ordem,  nome AS 'time', 'C' AS grupo FROM time_
+SELECT ordem,  nome AS 'time', 'C' AS grupo, codigo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
 WHERE grupo = 3
 
 CREATE VIEW grupo_d AS
-SELECT ordem,  nome AS 'time', 'D' AS grupo FROM time_
+SELECT ordem,  nome AS 'time', 'D' AS grupo, codigo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
 WHERE grupo = 4
 
 CREATE VIEW grupos AS
@@ -151,11 +149,46 @@ AS
 		END
 	END
 -----------------------------------------------
+	
+
+CREATE PROCEDURE sp_datas_oitavas
+	DECLARE @oitavas  TABLE (
+			row_order INT,
+			codigo_a  INT,
+			codigo_b  INT,
+			data_     DATETIME
+		)
+	
+	-- laco que execute o INSERT do CROSS JOIN entre
+	-- ab, cd, ac, bd, ad e bc
+
+	-- codigo exemplo:  grupo a e grupo b
+	INSERT INTO @oitavas (codigo_a, codigo_b)
+	SELECT a.codigo, b.codigo FROM grupo_a a
+	CROSS JOIN grupo_b b
+
+	-- tentativa de numerar as linhas
+	--INSERT INTO @oitavas (row_order) 
+	--SELECT DISTINCT ROW_NUMBER() OVER(ORDER BY codigo_b) AS 'row_order' FROM @oitavas
+
+	--
+	-- adicionar datas, restringindo times de jogarem mais de um vez no mesmo dia
+
+	SELECT * FROM @oitavas
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
 
-select * from grupos
+	-- ERRR...
 
- 
 alter PROCEDURE sp_gerar_datas
 AS
 	DECLARE @is_empty BIT

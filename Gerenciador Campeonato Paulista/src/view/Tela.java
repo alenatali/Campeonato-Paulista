@@ -18,18 +18,30 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
+import javax.swing.JLabel;
+import javax.swing.JTabbedPane;
 
 import controller.TelaCtrl;
 import util.ErrorLogST;
 import util.GenericDAOException;
 
-import javax.swing.JLabel;
-import javax.swing.JTabbedPane;
-
 public class Tela extends JFrame implements ActionListener {
 
+	//
+	//main pane
 	private JPanel contentPane;
+	private JTabbedPane tabbedPane;
+	
+	//
+	// tab grupos
+	private JPanel pGrupos;
+	private JLabel lblGrupoA, lblGrupoB, lblGrupoC, lblGrupoD;
 	private JTable[] tg = new JTable[4];
+	
+	//
+	// tab oitavas
+	private JPanel pOitavas;
+	
 	private TelaCtrl controller;
 
 	public Tela() {
@@ -38,6 +50,13 @@ public class Tela extends JFrame implements ActionListener {
 		} catch (GenericDAOException e) {
 			errorAlert(e);
 		}
+		
+		frameSetup();
+		tabGruposSetup ();
+		tabOitavasSetup();
+	}
+	
+	private void frameSetup () {
 		lookAndFeelSetup ();
 		setResizable(false);
 		setTitle("Campeonato Paulista");
@@ -48,7 +67,11 @@ public class Tela extends JFrame implements ActionListener {
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
-		
+		menuSetup();
+		tabsSetup();
+	}
+	
+	private void menuSetup () {
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.setBounds(0, 0, 594, 21);
 		contentPane.add(menuBar);
@@ -60,43 +83,43 @@ public class Tela extends JFrame implements ActionListener {
 		mntmGerarGrupos.setName("group generator");
 		mntmGerarGrupos.addActionListener(this);
 		mnOpes.add(mntmGerarGrupos);
-		
-		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+	}
+	
+	private void tabsSetup () {
+		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(0, 21, 598, 350);
 		contentPane.add(tabbedPane);
+	}
+	
+	private void tabGruposSetup () {
+		pGrupos = new JPanel();
 		
-		JPanel panel_1 = new JPanel();
-		
-		JLabel lblGrupoA = new JLabel("Grupo A");
+		lblGrupoA = new JLabel("Grupo A");
 		lblGrupoA.setBounds(68, 106, 46, 14);
-		panel_1.add(lblGrupoA);
+		pGrupos.add(lblGrupoA);
 		
-		JLabel lblGrupoB = new JLabel("Grupo B");
+		lblGrupoB = new JLabel("Grupo B");
 		lblGrupoB.setBounds(185, 106, 46, 14);
-		panel_1.add(lblGrupoB);
+		pGrupos.add(lblGrupoB);
 		
-		JLabel lblGrupoC = new JLabel("Grupo C");
+		lblGrupoC = new JLabel("Grupo C");
 		lblGrupoC.setBounds(301, 106, 46, 14);
-		panel_1.add(lblGrupoC);
+		pGrupos.add(lblGrupoC);
 		
-		JLabel lblGrupoD = new JLabel("Grupo D");
+		lblGrupoD = new JLabel("Grupo D");
 		lblGrupoD.setBounds(416, 106, 46, 14);
-		panel_1.add(lblGrupoD);
-		
-
+		pGrupos.add(lblGrupoD);
 		
 		for(int x = 0; x < tg.length; x++) {
 			tg[x] = new JTable();
 		}
 		limparTabelas();
 		
-		tabbedPane.addTab("Grupos", null, panel_1, null);
-		panel_1.setLayout(null);
-		panel_1.add(tg[0]);
-		panel_1.add(tg[1]);
-		panel_1.add(tg[2]);
-		panel_1.add(tg[3]);
-		
+		pGrupos.setLayout(null);
+		pGrupos.add(tg[0]);
+		pGrupos.add(tg[1]);
+		pGrupos.add(tg[2]);
+		pGrupos.add(tg[3]);
 		
 		tg[0].setBounds(68, 147, 75, 80);
 		tg[0].setRowSelectionAllowed(false);
@@ -114,8 +137,12 @@ public class Tela extends JFrame implements ActionListener {
 		tg[3].setBounds(416, 147, 75, 80);
 		tg[3].getColumnModel().getColumn(0).setResizable(false);
 		
-		JPanel panel_2 = new JPanel();
-		tabbedPane.addTab("Oitavas", null, panel_2, null);
+		tabbedPane.addTab("Grupos", null, pGrupos, null);
+	}
+	
+	private void tabOitavasSetup () {
+		pOitavas = new JPanel();
+		tabbedPane.addTab("Oitavas", null, pOitavas, null);
 	}
 	
 	private void lookAndFeelSetup () {
