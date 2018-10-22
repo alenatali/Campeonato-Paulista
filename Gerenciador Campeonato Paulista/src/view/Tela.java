@@ -1,6 +1,10 @@
 package view;
 
+import java.awt.Color;
 import java.awt.EventQueue;
+import java.awt.Rectangle;
+import java.awt.ScrollPane;
+
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -22,8 +26,10 @@ import javax.swing.JLabel;
 import javax.swing.JTabbedPane;
 
 import controller.TelaCtrl;
+import model.GrupoTableModel;
 import util.ErrorLogST;
 import util.GenericDAOException;
+import javax.swing.JScrollPane;
 
 public class Tela extends JFrame implements ActionListener {
 
@@ -43,6 +49,8 @@ public class Tela extends JFrame implements ActionListener {
 	private JPanel pOitavas;
 	
 	private TelaCtrl controller;
+	private JTable table;
+	private JScrollPane scrollPane;
 
 	public Tela() {
 		try {
@@ -93,50 +101,26 @@ public class Tela extends JFrame implements ActionListener {
 	
 	private void tabGruposSetup () {
 		pGrupos = new JPanel();
+		pGrupos.setLayout(null);
 		
 		lblGrupoA = new JLabel("Grupo A");
-		lblGrupoA.setBounds(68, 106, 46, 14);
+		lblGrupoA.setBounds(68, 80, 46, 14);
 		pGrupos.add(lblGrupoA);
 		
 		lblGrupoB = new JLabel("Grupo B");
-		lblGrupoB.setBounds(185, 106, 46, 14);
+		lblGrupoB.setBounds(185, 80, 46, 14);
 		pGrupos.add(lblGrupoB);
 		
 		lblGrupoC = new JLabel("Grupo C");
-		lblGrupoC.setBounds(301, 106, 46, 14);
+		lblGrupoC.setBounds(301, 80, 46, 14);
 		pGrupos.add(lblGrupoC);
 		
 		lblGrupoD = new JLabel("Grupo D");
-		lblGrupoD.setBounds(416, 106, 46, 14);
+		lblGrupoD.setBounds(416, 80, 46, 14);
 		pGrupos.add(lblGrupoD);
 		
-		for(int x = 0; x < tg.length; x++) {
-			tg[x] = new JTable();
-		}
 		limparTabelas();
-		
-		pGrupos.setLayout(null);
-		pGrupos.add(tg[0]);
-		pGrupos.add(tg[1]);
-		pGrupos.add(tg[2]);
-		pGrupos.add(tg[3]);
-		
-		tg[0].setBounds(68, 147, 75, 80);
-		tg[0].setRowSelectionAllowed(false);
-		tg[0].getColumnModel().getColumn(0).setResizable(false);
-		
-		tg[1].setRowSelectionAllowed(false);
-		tg[1].setBounds(185, 147, 75, 80);
-		tg[1].getColumnModel().getColumn(0).setResizable(false);
-		
-		tg[2].setBounds(301, 147, 75, 80);
-		tg[2].setRowSelectionAllowed(false);
-		tg[2].getColumnModel().getColumn(0).setResizable(false);
-		
-		tg[3].setRowSelectionAllowed(false);
-		tg[3].setBounds(416, 147, 75, 80);
-		tg[3].getColumnModel().getColumn(0).setResizable(false);
-		
+	
 		tabbedPane.addTab("Grupos", null, pGrupos, null);
 	}
 	
@@ -144,7 +128,7 @@ public class Tela extends JFrame implements ActionListener {
 		pOitavas = new JPanel();
 		tabbedPane.addTab("Oitavas", null, pOitavas, null);
 	}
-	
+
 	private void lookAndFeelSetup () {
 		try {
 			for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
@@ -158,16 +142,30 @@ public class Tela extends JFrame implements ActionListener {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void limparTabelas () {
-		TableModel tm = new DefaultTableModel(new String[] {"Time"}, 5);
-		for(JTable jt : tg) {
-			tm = new DefaultTableModel(new String[] {"Time"}, 5);
-			jt.setModel(tm);
-			jt.repaint();
-		} 
+		Rectangle[] bounds = 
+				{new Rectangle(68, 105, 75, 107),
+				 new Rectangle(185, 105, 75, 107),
+				 new Rectangle(301, 105, 75, 107),
+				 new Rectangle(416, 105, 75, 107)
+				};
+		for (int x = 0;  x < tg.length ; x++) {
+			tg[x] = new JTable(new GrupoTableModel());
+			
+			tg[x].setBounds(bounds[x]);
+			tg[x].setRowSelectionAllowed(false);
+			tg[x].getColumnModel().getColumn(0).setResizable(false);
+			
+			JScrollPane sp = new JScrollPane();
+			sp.setBounds(bounds[x]);
+			sp.setViewportView(tg[x]);
+			
+			pGrupos.add(sp);
+		}
+		pGrupos.repaint();
 	}
-	
+
 	private void errorAlert (Exception e) {
 		String mensage = "Ops, ocorreu um erro :(( \nPara mais detalhes consulte o log \ndeste software pasta temp.";
 		JOptionPane.showMessageDialog(this, mensage, "Erro", JOptionPane.ERROR_MESSAGE);
@@ -186,6 +184,7 @@ public class Tela extends JFrame implements ActionListener {
 		if(c.getName().equals("group generator")) {
 			try {
 				controller.prencherTabGrupos(tg);
+				pGrupos.repaint();
 			} catch (GenericDAOException e1) {
 				errorAlert(e1);
 			}

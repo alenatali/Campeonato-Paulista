@@ -16,8 +16,9 @@ PRIMARY KEY (codigo)
 CREATE TABLE jogo (
 time_a_codigo INT,
 time_b_codigo INT,
-gols_time_a   TINYINT NOT NULL CHECK (gols_time_a > -1),
-gols_time_b	  TINYINT NOT NULL CHECK (gols_time_b > -1),
+gols_time_a   TINYINT NOT NULL,
+gols_time_b	  TINYINT NOT NULL,
+fase          TINYINT NOT NULL CHECK(fase > -1 AND fase < 4), -- 0 = prim. fase, 1 = quartas, 2 = semi, 3 = final
 data_         DATETIME
 
 PRIMARY KEY(time_a_codigo, time_b_codigo, data_)
@@ -25,22 +26,24 @@ FOREIGN KEY (time_a_codigo) REFERENCES time_(codigo),
 FOREIGN KEY (time_b_codigo) REFERENCES time_(codigo)
 )
 
+--
+-- definição das views
 CREATE VIEW grupo_a AS
-SELECT ordem,  nome AS 'time', 'A' AS grupo, codigo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
+SELECT ordem, codigo, nome AS 'time', 'A' AS grupo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
 WHERE grupo = 1
-
+GO
 CREATE VIEW grupo_b AS
-SELECT ordem,  nome AS 'time', 'B' AS grupo, codigo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
+SELECT ordem, codigo, nome AS 'time', 'B' AS grupo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
 WHERE grupo = 2
-
+GO
 CREATE VIEW grupo_c AS
-SELECT ordem,  nome AS 'time', 'C' AS grupo, codigo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
+SELECT ordem, codigo, nome AS 'time', 'C' AS grupo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
 WHERE grupo = 3
-
+GO
 CREATE VIEW grupo_d AS
-SELECT ordem,  nome AS 'time', 'D' AS grupo, codigo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
+SELECT ordem, codigo, nome AS 'time', 'D' AS grupo, ROW_NUMBER() OVER(ORDER BY ordem) AS 'row_order' FROM time_
 WHERE grupo = 4
-
+GO
 CREATE VIEW grupos AS
 SELECT * FROM grupo_a
 UNION
@@ -50,6 +53,12 @@ SELECT * FROM grupo_c
 UNION
 SELECT * FROM grupo_d
 
+CREATE VIEW v_random
+AS
+SELECT RAND() AS random
+
+--
+-- Inserção times
 INSERT INTO time_ (nome, cidade, estadio) VALUES
 ('São Paulo', 'São Paulo', 'Morumbi'),
 ('Corinthians', 'São Paulo', 'Arena Corinthians'),
@@ -63,7 +72,7 @@ INSERT INTO time_ (nome, cidade, estadio) VALUES
 ('Ituano', 'Itu', 'Novelli Júnior'),
 ('Mogi Mirim', 'Mogi Mirim', 'Vali Chaves'),
 ('Linense', 'Lins', 'Gilberto Siqueira Lopes'),
-('Novorizintino', 'Novo Horizonte', 'Jorge Ismael de Biasi'),
+('Novorizontino', 'Novo Horizonte', 'Jorge Ismael de Biasi'),
 ('Oeste', 'Itápolis', 'Amaros'),
 ('Ponte Preta', 'Campinas', 'Moisés Lucarelli'),
 ('Red Bull Brasil', 'Campinas', 'Moisés Lucarelli'),
@@ -110,165 +119,200 @@ AS
 				)
 		SET @grupo = @grupo + 1
 	END
-
 ------------
 
 -- retorna aleatóriamente um dos seguites horarios: 16:30, 19:00 ou 22:15
-CREATE PROCEDURE sp_random_schedule	(@hour VARCHAR(5) OUTPUT)
+CREATE FUNCTION fn_random_schedule()
+RETURNS VARCHAR(12)
 AS
-	DECLARE @rand_hour INT
-	SET @rand_hour = ABS(CHECKSUM(NEWID()) % 3) + 1
+BEGIN
+	DECLARE @rand_hour INT,
+			@hour VARCHAR(12)
+	SET @rand_hour = FLOOR((SELECT TOP(1) random FROM v_random)*3+1)
 	SET @hour = '16:30:00.000'
+
 	IF (@rand_hour = 2)
 	BEGIN
-		SET @hour = '19:00:00.000'
+		RETURN '19:00:00.000'
 	END
 	ELSE
 	BEGIN
 		IF (@rand_hour > 2)
 		BEGIN
-			SET @hour = '22:15:00.000'
+			RETURN '22:15:00.000'
 		END
 	END
+	RETURN @hour
+END
 -----------------------------------------------
 
 -- Avança a data até aproxima quarta ou domigo
-CREATE PROCEDURE sp_sun_or_wed (@date DATETIME OUTPUT)
+CREATE FUNCTION fn_next_date (@date DATETIME)
+RETURNS DATETIME
 AS
-	DECLARE @day_bool BIT
-	SET @day_bool = 0
-	WHILE(@day_bool = 0)
+BEGIN
+	WHILE(0 = 0)
 	BEGIN
 		SET @date = DATEADD(DAY, 1, @date)
-		IF (
-			DATEPART( WEEKDAY, @date ) = 1 OR
-			DATEPART( WEEKDAY, @date ) = 4
-		)
+		IF (DATEPART( WEEKDAY, @date ) = 1 OR
+			DATEPART( WEEKDAY, @date ) = 4)
 		BEGIN
-			SET @day_bool = 1
+			BREAK
 		END
 	END
+	SET @date = SUBSTRING(CAST(@date AS VARCHAR(24)), 0, 12) + ' ' + dbo.fn_random_schedule()
+	RETURN @date
+END
 -----------------------------------------------
-	
 
-CREATE PROCEDURE sp_datas_oitavas
-	DECLARE @oitavas  TABLE (
-			row_order INT,
+-- procura uma data que, nem o time A nem o time B, não tenham jogos agendados
+DROP FUNCTION fn_available_agenda
+CREATE FUNCTION fn_available_agenda (@cod_t_a INT, @cod_t_b INT)
+RETURNS DATETIME
+AS
+BEGIN
+	DECLARE @date DATETIME,
+			@date_c VARCHAR(10),
+			@a    INT,
+			@b    INT
+	SET @date = '2016-30-01 00:00:00.000'
+			WHILE(0 = 0)
+			BEGIN
+				SET @date = dbo.fn_next_date(@date)
+				SET @date_c = SUBSTRING(CAST(@date AS VARCHAR(23)), 1 , 10)
+				SET @a = (SELECT COUNT(*) from jogo 
+						  WHERE 
+								(time_a_codigo = @cod_t_a OR time_b_codigo = @cod_t_a)
+								AND SUBSTRING(CAST(data_ AS VARCHAR(23)), 1 , 10) = @date_c)
+				SET @b = (SELECT COUNT(*) from jogo 
+						  WHERE 
+								(time_a_codigo = @cod_t_b OR time_b_codigo = @cod_t_b)
+								AND SUBSTRING(CAST(data_ AS VARCHAR(23)), 1 , 10) = @date_c)
+				IF (@a < 1 AND @b < 1)
+				BEGIN
+					BREAK
+				END
+			END
+	RETURN @date
+END
+/*
+SELECT COUNT(*) from jogo WHERE time_a_codigo = @cod_t_a AND data_ = @date
+select * from jogo
+select TOP(1) * from jogo
+print(dbo.fn_available_agenda(1, 2)) --Jan 31 2016 10:15PM
+print(dbo.fn_available_agenda(1, 3)) --Fev  3 2016  7:00PM
+print(dbo.fn_available_agenda(2, 3)) --Jan 31 2016 10:15PM
+update jogo set data_ = dbo.fn_next_date('2016-30-01 00:00:00.000') where time_a_codigo = 1 AND time_b_codigo = 2
+update jogo set data_ = dbo.fn_next_date('2016-03-02 00:00:00.000') where time_a_codigo = 1 AND time_b_codigo = 3
+update jogo set data_ = dbo.fn_next_date('2016-03-02 00:00:00.000') where time_a_codigo = 2 AND time_b_codigo = 3
+update jogo set data_ = dbo.fn_next_date('2016-03-02 00:00:00.000') where time_a_codigo = 2 AND time_b_codigo = 3
+*/
+-----------------------------------------------
+
+-- Organiza partidas com horário aleatórios, através da ordem e divisão de grupos
+DROP PROCEDURE sp_gerador_jogos_oitavas
+GO
+CREATE PROCEDURE sp_gerador_jogos_oitavas
+AS
+	TRUNCATE TABLE jogo
+	DECLARE @query    VARCHAR(MAX),
+			@c_rodadas INT
+	SET @c_rodadas = 1
+
+	WHILE (@c_rodadas < 4)
+	BEGIN
+		DECLARE @g11 CHAR,
+				@g12 CHAR,
+				@g21 CHAR,
+				@g22 CHAR
+
+		IF (@c_rodadas = 1)
+		BEGIN
+			SET @g11 = 'a'
+			SET @g12 = 'b'
+			SET @g21 = 'c'
+			SET @g22 = 'd'
+		END
+		ELSE
+		BEGIN
+			IF(@c_rodadas = 2)
+			BEGIN
+				SET @g11 = 'a'
+				SET @g12 = 'c'
+				SET @g21 = 'b'
+				SET @g22 = 'd'
+			END
+			ELSE
+			BEGIN
+				SET @g11 = 'a'
+				SET @g12 = 'd'
+				SET @g21 = 'b'
+				SET @g22 = 'c'
+			END
+		END
+
+		SET @query = '
+			DECLARE @oitavas  TABLE (
 			codigo_a  INT,
 			codigo_b  INT,
 			data_     DATETIME
 		)
-	
-	-- laco que execute o INSERT do CROSS JOIN entre
-	-- ab, cd, ac, bd, ad e bc
+		INSERT INTO @oitavas (codigo_a, codigo_b)
+		SELECT '+@g11+'.codigo, '+@g12+'.codigo FROM grupo_'+@g11+' '+@g11+'
+		CROSS JOIN grupo_'+@g12+' '+@g12+'
 
-	-- codigo exemplo:  grupo a e grupo b
-	INSERT INTO @oitavas (codigo_a, codigo_b)
-	SELECT a.codigo, b.codigo FROM grupo_a a
-	CROSS JOIN grupo_b b
+		INSERT INTO jogo (time_a_codigo, time_b_codigo, data_, gols_time_a, gols_time_b, fase)
+		SELECT codigo_a, codigo_b, ''2000-01-01 00:00:00.000'', 0, 0, 0 FROM @Oitavas '
 
-	-- tentativa de numerar as linhas
-	--INSERT INTO @oitavas (row_order) 
-	--SELECT DISTINCT ROW_NUMBER() OVER(ORDER BY codigo_b) AS 'row_order' FROM @oitavas
+		EXEC(@query)
 
-	--
-	-- adicionar datas, restringindo times de jogarem mais de um vez no mesmo dia
+		SET @query = '
+			DECLARE @oitavas  TABLE (
+			codigo_a  INT,
+			codigo_b  INT,
+			data_     DATETIME
+		)
+		INSERT INTO @oitavas (codigo_a, codigo_b)
+		SELECT '+@g21+'.codigo, '+@g22+'.codigo FROM grupo_'+@g21+' '+@g21+'
+		CROSS JOIN grupo_'+@g22+' '+@g22+'
 
-	SELECT * FROM @oitavas
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+		INSERT INTO jogo (time_a_codigo, time_b_codigo, data_, gols_time_a, gols_time_b, fase)
+		SELECT codigo_a, codigo_b, ''2000-01-01 00:00:00.000'', 0, 0, 0 FROM @Oitavas '
 
-
-	-- ERRR...
-
-alter PROCEDURE sp_gerar_datas
-AS
-	DECLARE @is_empty BIT
-	SET @is_empty = 0
-	DECLARE @stack TABLE (
-		codigo  INT,
-		nome    VARCHAR(50) NOT NULL,
-		cidade  VARCHAR(80) NOT NULL,
-		estadio VARCHAR(60),
-		ordem INT,
-		grupo INT
-	)
-	INSERT INTO @stack SELECT * FROM time_
-	TRUNCATE TABLE jogo
-
-	-- mecanismo de pilha
-	WHILE (@is_empty = 0)
-	BEGIN
-		DECLARE @hour VARCHAR(5),
-				@team_count INT,
-				@date DATETIME
-		SET @team_count = 1
-		SET @date = '2016-30-01 00:00:00.000' -- ANO DIA MES
-
-		--get date
-		WHILE (@team_count < 21)
-		BEGIN
-			EXEC sp_random_schedule @hour OUTPUT
-
-			DECLARE @top_stack_codigo INT,
-					@top_stack_grupo INT,
-					@count_grupo INT
-			SET @top_stack_codigo = (SELECT TOP(1) codigo FROM @stack)
-			SET @top_stack_grupo = (SELECT TOP(1) grupo FROM @stack)
-			SET @count_grupo = (SELECT grupo FROM @stack WHERE codigo = @team_count)
-
-			-- se o time do topo da stack não for o mesmo do contador ou do mesmo grupo do contador
-			IF ( @top_stack_codigo != @team_count ) 
-				AND 
-			   ( @top_stack_grupo != @count_grupo )
-			BEGIN
-				EXEC sp_sun_or_wed @date OUTPUT
-				INSERT INTO jogo (time_a_codigo, time_b_codigo, gols_time_a, gols_time_b, data_) VALUES
-				(@team_count, -- todos os times
-				 (SELECT TOP(1) codigo FROM @stack), -- stack de times
-				 0,
-				 0,
-				 @date)
-			 END
-
-			-- gerar partidas
-			SET @team_count += 1
-		END
-
-		-- controle de do laço
-		DELETE FROM @stack WHERE codigo = (SELECT TOP(1) codigo FROM @stack)
-		IF NOT EXISTS (SELECT 1 FROM @stack)
-		BEGIN
-			SET @is_empty = 1
-		END
+		EXEC(@query)
+		
+		SET @c_rodadas += 1
 	END
 
+	-- atribuição de datas
+	DECLARE @cod_t_a  INT,
+			@cod_t_b  INT
 
-exec sp_gerar_datas
-SELECT * FROM jogo
+	-- executa enquanto ouver datas default
+	WHILE ((select top(1) COUNT(*) from jogo where data_ = '2000-01-01 00:00:00.000') > 0)
+	BEGIN
+		SET @cod_t_a = (select top(1) time_a_codigo from jogo where data_ = '2000-01-01 00:00:00.000')
+		SET @cod_t_b = (select top(1) time_b_codigo from jogo where data_ = '2000-01-01 00:00:00.000')
+		UPDATE TOP(1) jogo SET data_ = dbo.fn_available_agenda(@cod_t_a, @cod_t_b) where data_ = '2000-01-01 00:00:00.000'
+	END
+-----------------------------------------------
 
+/*
+-- Gerar aleatórimente o placar dos jogos da fase informada, zerando os placares posteriores
+CREATE PROCEDURE sp_gerador_placar (@fase INT OUTPUT)
+AS
+	UPDATE jogo SET gols_time_a = -1, gols_time_b = -1 WHERE fase >= @fase
 
--- Adicionar hora numa data
-DECLARE @date DATETIME
-SET @date = '2016-30-01 00:00:00.000'
-SET @date = SUBSTRING (CAST(@date AS VARCHAR(23)), 0, 12 ) + ' ' + '01:00:00.000'
-PRINT(@date)
+	DECLARE @qtd_gols_a INT,
+			@qtd_gols_b INT
 
+	WHILE ((SELECT TOP(1) COUNT(*) FROM jogo WHERE gols_time_a + gols_time_b < 0) > 0)
+	BEGIN
+		SET @qtd_gols_a = ABS(CHECKSUM(NEWID()) % 10)
+		SET @qtd_gols_b = ABS(CHECKSUM(NEWID()) % 10)
 
--- Criar o sistema que organiza os jogos em horarios pré definidos de forma aleatória
--- iniciando por 30 de janeiro de 2016 e saltando até o proximo dia de jogo e assim sucessivamente
--- até todos os times enfrentarem os outros times que não do mesmo grupo
-
-
--- inicio 30 janeiro 2016
--- 10 jogos na quarta 10 jogos no domingo
--- 16:30  19:00  22:15
--- os 2 melhores de cada chave avançam as quartas de final
+		UPDATE TOP(1) jogo SET gols_time_a = @qtd_gols_a, gols_time_b = @qtd_gols_b
+		WHERE fase = @fase
+	END
+-----------------------------------------------
+*/
